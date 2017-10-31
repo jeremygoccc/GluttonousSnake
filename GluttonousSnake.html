@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+  <style type="text/css">
+    #canva {
+      //background: black;
+      position: absolute;
+      top: 100px;
+      left: 200px;
+    }
+    span {
+      position: absolute;
+      top: 200px;
+      right: 180px;
+      font-size: 50px;
+    }
+    .start {
+      position: absolute;
+      top: 450px;
+      right: 350px;
+      width: 100px;
+    }
+    .reset {
+      display: none;
+      position: absolute;
+      top: 500px;
+      right: 350px;
+      width: 100px;
+    }
+  </style>
+  <!-- <script type="text/javascript" src="kibo.min.js"></script> -->
+  <script type="text/javascript">
+  /*多次转向的问题,蛇尾和食物产生的坐标,食物出现在蛇身上的重刷新*/
+
+    window.onload = function() {
+      var canva = document.getElementById('canva');
+      if (canva.getContext) {     //确定浏览器支持canvas
+        var ctx = canva.getContext('2d');
+
+        var xStart = 1;
+        var xEnd = 600;
+        var yStart = 1;
+        var yEnd = 500;
+        ctx.strokeStyle = 'red';
+        ctx.beginPath();
+        ctx.strokeRect(xStart,yStart,xEnd-xStart,yEnd-yStart);  //画一个红色矩形边界
+        ctx.closePath();
+
+        this.gameStart = function() {
+
+          // if (meter) clearInterval(meter);
+
+          document.addEventListener('keydown', keyPush);
+
+          document.getElementsByTagName('span')[0].style.visibility = 'hidden';
+          document.getElementsByTagName('button')[0].disabled = 'true';
+
+          var snakeTailX, snakeTailY, snakeLength, snakeHeadX, snakeHeadY;
+
+          var snakeTailXCurrent, snakeTailYCurrent, snakeHeadXCurrent, snakeHeadYCurrent;
+
+          var speed, setIntervalTime, directFlag, i, exchgFlag;
+
+          function DrawSnake() {};
+          DrawSnake.prototype = {
+            init: function() {
+              snakeTailX = Math.round(Math.random()*500);  // 一定范围得出蛇尾坐标
+              snakeTailY = Math.round(Math.random()*500);
+              snakeLength = 50;
+              snakeHeadX = snakeTailX + snakeLength;      // 蛇头坐标在直线上要分别调用
+              snakeHeadY = snakeTailY + snakeLength;
+              snakeHeadXCurrent = 0;
+              snakeHeadYCurrent = 0;
+              snakeTailXCurrent = 0;
+              snakeTailYCurrent = 0;
+              speed = 1;                                 // 初始速度
+              setIntervalTime = 20;
+              directFlag = Math.round(Math.random()*3);  // 方向标志，0-3对应上下左右
+              i = 0;                                     // 移动的间距
+              exchgFlag = 1;                             // 交换头尾坐标的标志，为0不交换
+            },
+            draw: function() {
+              ctx.clearRect(xStart,yStart,xEnd-xStart,yEnd-yStart);
+              drawSnack.draw();    //清空画布后再生成食物
+              ctx.strokeStyle = "blue";
+              ctx.lineCap = "round";
+              ctx.lineWidth = 3;
+              ctx.beginPath();
+
+              i += speed;
+
+              switch(directFlag) {
+                case 0: if (i > 0) i = -i;                  //只取反一次
+                        if (speed > 0) speed = -speed;      //不使用case合并两种情况
+                case 1: ctx.moveTo(snakeTailX,snakeTailY+i);
+                        ctx.lineTo(snakeTailX,snakeHeadY+i);
+
+                        if (directFlag == 0 && exchgFlag) {
+                          var temp = 0;
+                          temp = snakeHeadY;
+                          snakeHeadY = snakeTailY;
+                          snakeTailY = temp;
+                          exchgFlag = 0;
+                        }
+
+                        snakeHeadXCurrent = snakeTailX;    //这里赋值要用蛇尾X坐标,即在纵向上统一
+                        snakeHeadYCurrent = snakeHeadY+i;
+                        snakeTailXCurrent = snakeTailX;
+                        snakeTailYCurrent = snakeTailY+i;
+                        break;
+                case 2: if (i > 0) i = -i;
+                        if (speed > 0) speed = -speed;
+                case 3: ctx.moveTo(snakeTailX+i,snakeTailY);
+                        ctx.lineTo(snakeHeadX+i,snakeTailY);   //  通过对i取反达到向左移的效果，但是头尾坐标相反了
+
+                        if (directFlag == 2 && exchgFlag) {    //交换头尾坐标并且只交换一次
+                          var temp = 0;
+                          temp = snakeHeadX;
+                          snakeHeadX = snakeTailX;
+                          snakeTailX = temp;
+                          exchgFlag = 0;
+                        }
+
+                        snakeHeadXCurrent = snakeHeadX+i;   //保存现在的蛇头坐标,转向时使用
+                        snakeHeadYCurrent = snakeTailY;
+                        snakeTailXCurrent = snakeTailX+i;   //保存现在的蛇尾坐标
+                        snakeTailYCurrent = snakeTailY;
+                        break;
+              }
+
+              ctx.closePath();
+              ctx.stroke();
+
+              //撞墙判断
+              if (snakeHeadXCurrent >= xEnd+1 || snakeHeadXCurrent <= xStart || snakeHeadYCurrent >=   yEnd+1 || snakeHeadYCurrent <= yStart) {
+                console.log("bong！");
+                i = 0;
+                ctx.clearRect(xEnd+1,yStart+1,canva.width-xEnd,canva.height-yStart);
+                document.getElementsByTagName('span')[0].style.visibility = 'visible';
+                document.getElementsByTagName('span')[0].innerHTML = 'Game Over';
+                document.getElementsByTagName('button')[1].style.display = 'block';
+                // directFlag = Math.round(Math.random()*3);
+              }
+            },
+            moveSnake: function() {
+              meter = setInterval(drawSnake.draw,setIntervalTime);
+            },
+            //转向完成重置变量
+            resetVariable: function() {
+              // if (speed < 0) speed = -speed;
+              i = 0;
+              speed = 1;
+              j = 1;
+              z = 1;
+              add = 1;
+              avoidDiversion = false;
+              drawSnake.moveSnake();
+            }
+          };
+
+          //实例化蛇
+          let drawSnake = new DrawSnake();
+          drawSnake.init();
+          drawSnake.moveSnake();
+
+          var snackX, snackY;
+          var snackFlag = true;
+          var snakeScore = 0;
+          var scoreFlag = false;
+
+          function DrawSnack() {};
+          DrawSnack.prototype = {
+            init: function() {
+                snackX = Math.round(Math.random()*500);   // 随机产生食物坐标
+                snackY = Math.round(Math.random()*500);
+            },
+            draw: function() {
+                if (snackFlag) {
+                  this.init();
+                  snackFlag = 0;
+                }
+
+                ctx.fillStyle = 'green';
+                ctx.beginPath();
+                ctx.arc(snackX,snackY,2,0,2*Math.PI,false);
+                ctx.closePath();
+                ctx.fill();
+
+                //吃到食物
+                var xRight = (snakeHeadXCurrent <= snackX+5) || (snakeHeadXCurrent >= snackX-5);
+                var yRight = (snakeHeadYCurrent <= snackY+5) || (snakeHeadYCurrent >= snackY-5);
+                if ((Math.abs(snackX - snakeHeadXCurrent) <= 5) && (Math.abs(snackY - snakeHeadYCurrent) <= 5)) {   //转向状态无效
+                  console.log("true");
+                  snakeScore++;
+                  snakeLength++;
+                  speed++;
+                  snackFlag = 1;  //生成新坐标
+                  scoreFlag = true;  //分数刷新状态
+                  this.draw();
+                  drawText.init();
+                }
+            }
+          };
+
+          // 实例化食物
+          let drawSnack = new DrawSnack();
+          drawSnack.init();
+          drawSnack.draw();
+
+          //文本区域
+          function DrawText() {};
+
+          DrawText.prototype = {
+            init: function() {
+                if (scoreFlag) ctx.clearRect(xEnd+1,yStart+1,canva.width-xEnd,canva.height-yStart);
+                ctx.fillStyle = 'black';
+                ctx.beginPath();
+                ctx.font = "bold 50px Arial";
+                ctx.fillText("Score : " + snakeScore,xEnd+230,200);
+                ctx.closePath();
+            }
+          };
+
+          let drawText = new DrawText();
+          drawText.init();
+
+          var j = 1;
+          var z = 1;   //z与j的绝对值应相同，用来解决不同方向的混杂问题
+          var add = 1;
+
+          var avoidDiversion = false;    //屏蔽多次转向的标志
+
+          //键盘控制
+          function KeyBoard() {};
+          KeyBoard.prototype = {
+            up: function() {
+                  if (avoidDiversion) return;
+                  if (directFlag == 2) {
+                    j = -j;
+                    add = -add;
+                  }
+                  if (directFlag && directFlag != 1) {   //横向运动时
+                    directFlag = 0;
+                    clearInterval(meter);   //清除直线运动的定时器
+                    ctx.clearRect(xStart,yStart,xEnd-xStart,yEnd-yStart);   //清空画布
+
+                    meterUp = setInterval(function() {      //设置转向运动时的计时器
+                      ctx.clearRect(xStart,yStart,xEnd-xStart,yEnd-yStart);
+                      drawSnack.draw();
+                      ctx.beginPath();
+                      ctx.moveTo(snakeTailXCurrent+j,snakeTailYCurrent);
+                      ctx.lineTo(snakeHeadXCurrent,snakeTailYCurrent);
+                      ctx.lineTo(snakeHeadXCurrent,snakeTailYCurrent-z);
+                      ctx.stroke();
+                      j += add;
+                      z += Math.abs(add);
+                      avoidDiversion = true;
+                      if (Math.abs(j) == snakeLength) {
+                        clearInterval(meterUp);             //清除向上转向的定时器
+                        snakeHeadX = snakeHeadXCurrent;     //重新覆盖蛇头蛇尾的坐标(易混)
+                        snakeHeadY = snakeTailYCurrent-z;
+                        snakeTailX = snakeHeadXCurrent;
+                        snakeTailY = snakeTailYCurrent;
+
+                        drawSnake.resetVariable();
+                      }
+                    },setIntervalTime);
+                  } else return;
+                },
+            down: function() {
+                    if (avoidDiversion) return;
+                    if (directFlag == 2) {
+                      j = -j;
+                      add = -add;
+                    }
+                    if (directFlag && directFlag != 1) {   //横向运动时
+                      directFlag = 1;
+                      clearInterval(meter);   //清除直线运动的定时器
+                      ctx.clearRect(xStart,yStart,xEnd-xStart,yEnd-yStart);   //清空画布
+
+                      meterDown = setInterval(function() {      //设置转向运动时的计时器
+                        ctx.clearRect(xStart,yStart,xEnd-xStart,yEnd-yStart);
+                        drawSnack.draw();
+                        ctx.beginPath();
+                        ctx.moveTo(snakeTailXCurrent+j,snakeTailYCurrent);
+                        ctx.lineTo(snakeHeadXCurrent,snakeTailYCurrent);
+                        ctx.lineTo(snakeHeadXCurrent,snakeTailYCurrent+z);
+                        ctx.stroke();
+                        j += add;
+                        z += Math.abs(add);
+                        avoidDiversion = true;
+                        if (Math.abs(j) == snakeLength) {
+                          clearInterval(meterDown);             //清除向上转向的定时器
+                          snakeHeadX = snakeHeadXCurrent;     //重新覆盖蛇头蛇尾的坐标(易混)
+                          snakeHeadY = snakeTailYCurrent+z;
+                          snakeTailX = snakeHeadXCurrent;
+                          snakeTailY = snakeTailYCurrent;
+
+                          drawSnake.resetVariable();
+                        }
+                      },setIntervalTime);
+                    } else return;
+                },
+            left: function() {
+                    if (avoidDiversion) return;
+                    if (directFlag == 0) {
+                      j = -j;
+                      add = -add;
+                    }
+                    if (directFlag != 2 && directFlag !=3) {   //纵向运动时
+                      directFlag = 2;
+                      clearInterval(meter);   //清除直线运动的定时器
+                      ctx.clearRect(xStart,yStart,xEnd-xStart,yEnd-yStart);   //清空画布
+
+                      meterLeft = setInterval(function() {      //设置转向运动时的计时器
+                        ctx.clearRect(xStart,yStart,xEnd-xStart,yEnd-yStart);
+                        drawSnack.draw();
+                        ctx.beginPath();
+                        ctx.moveTo(snakeHeadXCurrent,snakeTailYCurrent+j);
+                        ctx.lineTo(snakeHeadXCurrent,snakeHeadYCurrent);
+                        ctx.lineTo(snakeHeadXCurrent-z,snakeHeadYCurrent);
+                        ctx.stroke();
+                        j += add;
+                        z += Math.abs(add);
+                        avoidDiversion = true;
+                        if (Math.abs(j) == snakeLength) {
+                          clearInterval(meterLeft);
+                          snakeHeadX = snakeHeadXCurrent-z;
+                          snakeHeadY = snakeHeadYCurrent;
+                          snakeTailX = snakeHeadXCurrent;
+                          snakeTailY = snakeHeadYCurrent;
+
+                          drawSnake.resetVariable();
+                        }
+                      },setIntervalTime);
+                    } else return;
+                },
+            right: function() {
+                     if (avoidDiversion) return;
+                     if (directFlag == 0) {
+                       j = -j;
+                       add = -add;
+                     }
+                     if (directFlag != 2 && directFlag !=3) {   //纵向运动时
+                       directFlag = 3;
+                       clearInterval(meter);   //清除直线运动的定时器
+                       ctx.clearRect(xStart,yStart,xEnd-xStart,yEnd-yStart);   //清空画布
+
+                       meterRight = setInterval(function() {      //设置转向运动时的计时器
+                         ctx.clearRect(xStart,yStart,xEnd-xStart,yEnd-yStart);
+                         drawSnack.draw();
+                         ctx.beginPath();
+                         ctx.moveTo(snakeHeadXCurrent,snakeTailYCurrent+j);
+                         ctx.lineTo(snakeHeadXCurrent,snakeHeadYCurrent);
+                         ctx.lineTo(snakeHeadXCurrent+z,snakeHeadYCurrent);
+                         ctx.stroke();
+                         j += add;
+                         z += Math.abs(add);
+                         avoidDiversion = true;
+                         if (Math.abs(j) == snakeLength) {
+                           clearInterval(meterRight);
+                           snakeHeadX = snakeHeadXCurrent+z;     //重新覆盖蛇头蛇尾的坐标(易混)
+                           snakeHeadY = snakeHeadYCurrent;
+                           snakeTailX = snakeHeadXCurrent;
+                           snakeTailY = snakeHeadYCurrent;
+
+                           drawSnake.resetVariable();
+                         }
+                       },setIntervalTime);
+                     } else return;
+                }
+          };
+          let keyBoard = new KeyBoard();
+
+          function keyPush(evt) {
+            switch(evt.keyCode) {
+                case 37: keyBoard.left();
+                         break;
+                case 38: keyBoard.up();
+                         break;
+                case 39: keyBoard.right();
+                         break;
+                case 40: keyBoard.down();
+                         break;
+            }
+          }
+
+       }
+    }
+  }
+  </script>
+</head>
+<body>
+
+<canvas id="canva" width="1100" height="550"></canvas>
+<span>Gluttonous Snake</span>
+<button type="button" class="start" onclick="window.gameStart();">Start</button>
+<button type="button" class="reset" onclick="history.go(0);">Reset</button>
+</body>
+</html>
