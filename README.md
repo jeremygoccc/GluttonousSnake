@@ -1,0 +1,2 @@
+# GluttonousSnake
+原生js结合canvas实现的简易贪吃蛇
